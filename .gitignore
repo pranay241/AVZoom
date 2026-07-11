@@ -1,0 +1,27 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual Environment
+.venv/
+venv/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+
+# Data
+data/frames/
+data/audio/
+outputs/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Logs
+*.log
