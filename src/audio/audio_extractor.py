@@ -1,15 +1,32 @@
-from moviepy import VideoFileClip
+import subprocess
 import numpy as np
+import soundfile as sf
+import tempfile
+import os
 
 class AudioExtractor:
-    def __init__(self,sample_rate=16000):
+    def __init__(self, sample_rate=16000):
         self.sample_rate = sample_rate
 
-    def extract(self,video_path):
-        clip = VideoFileClip(video_path)
-        audio = clip.audio.to_soundarray(fps=self.sample_rate)
-        if audio.ndim > 1:
-            audio = audio.mean(axis = 1)
+    def extract(self, video_path):
+        with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp:
+            tmp_path = tmp.name
 
-        clip.close()
-        return audio,self.sample_rate
+        try:
+            subprocess.run(
+                [
+                    "ffmpeg", "-y", "-i", video_path,
+                    "-vn",
+                    "-acodec", "pcm_s16le",
+                    "-ar", str(self.sample_rate),
+                    "-ac", "1",
+                    tmp_path
+                ],
+                check=True,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL
+            )
+            audio, sr = sf.read(tmp_path)
+            return audio, sr
+        finally:
+            os.remove(tmp_path)
