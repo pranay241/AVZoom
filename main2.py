@@ -6,6 +6,7 @@ from src.video.face_mesh import FaceMeshDetector
 from src.video.mouth import MouthAnalyzer
 from src.video.active_speaker import ActiveSpeakerSelector
 from src.video.zoom import SmoothZoom
+from src.video.optical_flow import MouthFlowAnalyzer
 
 detector = FaceDetector()
 tracker = FaceTracker()
@@ -13,6 +14,7 @@ mesh_detector = FaceMeshDetector()
 mouth = MouthAnalyzer()
 selector = ActiveSpeakerSelector()
 zoomer = SmoothZoom()
+flow_analyzer = MouthFlowAnalyzer()
 
 cap = cv2.VideoCapture("data/videos/test.mp4")
 if not cap.isOpened():
@@ -26,6 +28,7 @@ if fps <= 0:
     print("fps was invalid, defaulting to 30")
 
 mar_log = []
+flow_log = []
 out_writer = None
 
 frame_idx = 0
@@ -60,12 +63,14 @@ while True:
             face_landmarks = mesh_results.multi_face_landmarks[0]
             crop_h, crop_w, _ = face_crop.shape
             result = mouth.analyze(face_landmarks, crop_w, crop_h)
+            flow_result = flow_analyzer.analyze(face_id,face_crop,face_landmarks,crop_w,crop_h)
 
             mar_log.append((timestamp, face_id, result["mar"]))
+            flow_log.append((timestamp, face_id, flow_result["flow_magnitude"]))
             frame_mars[face_id] = result["mar"]
 
             cv2.putText(
-                frame, f"ID {face_id} MAR: {result['mar']:.3f}",
+                    frame, f"ID {face_id} MAR: {result['mar']:.3f} Flow : {flow_result['flow_magnitude']:.3f}",
                 (x, y - 30), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 255), 2
             )
 
@@ -131,7 +136,7 @@ if out_writer is not None:
 cv2.destroyAllWindows()
 
 np.save("mar_log.npy", np.array(mar_log, dtype=object))
-
+np.save("flow_log.npy", np.array(flow_log, dtype=object))
 print(f"Total frames processed: {frame_idx}")
 print(f"Frames with active speaker: {frames_with_active_speaker}")
 print(f"Frames actually written: {frames_written}")
